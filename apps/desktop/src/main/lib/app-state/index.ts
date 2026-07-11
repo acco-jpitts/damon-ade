@@ -111,6 +111,11 @@ export async function initAppState(): Promise<void> {
 	// Reshape data to ensure it has the correct structure (handles legacy formats)
 	_appState.data = ensureValidShape(_appState.data, _deviceId);
 
+	// Persist so the file exists on disk. JSONFilePreset only reads (falling back
+	// to defaults in memory); without this, a fresh install has no app-state.json
+	// until the first mutation, and the app-state watcher throws ENOENT on start.
+	await _appState.write();
+
 	console.log(
 		`App state initialized at: ${APP_STATE_PATH} (deviceId=${_deviceId.slice(0, 8)}...)`,
 	);

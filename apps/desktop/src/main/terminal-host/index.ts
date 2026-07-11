@@ -12,7 +12,7 @@
  * - Auth token: ~/.superset/terminal-host.token
  */
 
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import {
 	chmodSync,
 	existsSync,
@@ -57,8 +57,23 @@ const DAEMON_VERSION = "1.0.0";
 // This allows workspace-specific home directories (e.g., ~/.superset-my-feature)
 const SUPERSET_HOME_DIR = join(homedir(), SUPERSET_DIR_NAME);
 
-// Socket and token paths
-const SOCKET_PATH = join(SUPERSET_HOME_DIR, "terminal-host.sock");
+const IS_WINDOWS = process.platform === "win32";
+
+// Socket and token paths.
+// On Windows, net requires a named pipe rather than a filesystem socket. The
+// pipe name is derived from the (Unix) socket path so client and daemon agree.
+const SOCKET_FS_PATH = join(SUPERSET_HOME_DIR, "terminal-host.sock");
+const SOCKET_PATH = IS_WINDOWS
+	? `\\\\.\\pipe\\ade-terminal-host-${createHash("sha1")
+			.update(SOCKET_FS_PATH)
+			.digest("hex")
+			.slice(0, 12)}`
+	: SOCKET_FS_PATH;
+
+// A named pipe has no filesystem entry, so existsSync can't detect it.
+const socketPathMayExist = (): boolean =>
+	IS_WINDOWS ? true : existsSync(SOCKET_PATH);
+
 const TOKEN_PATH = join(SUPERSET_HOME_DIR, "terminal-host.token");
 const PID_PATH = join(SUPERSET_HOME_DIR, "terminal-host.pid");
 
@@ -636,7 +651,7 @@ function handleConnection(socket: Socket) {
  */
 function isSocketLive(): Promise<boolean> {
 	return new Promise((resolve) => {
-		if (!existsSync(SOCKET_PATH)) {
+		if (!socketPathMayExist()) {
 			resolve(false);
 			return;
 		}
@@ -676,9 +691,17 @@ async function startServer(): Promise<void> {
 		// May fail if not owner, that's okay
 	}
 
-	// Check if socket is live before removing it
-	// This prevents orphaning a running daemon
-	if (existsSync(SOCKET_PATH)) {
+	// Check if a live daemon is already running before we take the socket.
+	// This prevents orphaning a running daemon.
+	if (IS_WINDOWS) {
+		// Named pipes have no filesystem entry to stat or unlink; they vanish when
+		// the owning process exits. A live probe still guards against double-start,
+		// and EADDRINUSE on listen() backs it up.
+		if (await isSocketLive()) {
+			log("error", "Another daemon is already running and responsive");
+			throw new Error("Another daemon is already running");
+		}
+	} else if (existsSync(SOCKET_PATH)) {
 		const isLive = await isSocketLive();
 		if (isLive) {
 			log("error", "Another daemon is already running and responsive");

@@ -10,7 +10,7 @@
  */
 
 import { spawn } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { EventEmitter } from "node:events";
 import {
 	chmodSync,
@@ -69,7 +69,23 @@ const DEBUG_CLIENT = process.env.SUPERSET_TERMINAL_DEBUG === "1";
 // Get from shared constants for multi-worktree support (imported at top of file)
 const SUPERSET_HOME_DIR = join(homedir(), SUPERSET_DIR_NAME);
 
-const SOCKET_PATH = join(SUPERSET_HOME_DIR, "terminal-host.sock");
+const IS_WINDOWS = process.platform === "win32";
+
+// On Windows, net servers/clients require a named pipe, not a filesystem path.
+// Derive a stable pipe name unique to this home dir so worktrees don't collide.
+const SOCKET_FS_PATH = join(SUPERSET_HOME_DIR, "terminal-host.sock");
+const SOCKET_PATH = IS_WINDOWS
+	? `\\\\.\\pipe\\ade-terminal-host-${createHash("sha1")
+			.update(SOCKET_FS_PATH)
+			.digest("hex")
+			.slice(0, 12)}`
+	: SOCKET_FS_PATH;
+
+// A named pipe has no filesystem entry, so existsSync can't detect it.
+// On Windows, assume it may exist and let the connect attempt decide.
+const socketPathMayExist = (): boolean =>
+	IS_WINDOWS ? true : existsSync(SOCKET_PATH);
+
 const TOKEN_PATH = join(SUPERSET_HOME_DIR, "terminal-host.token");
 const PID_PATH = join(SUPERSET_HOME_DIR, "terminal-host.pid");
 const SPAWN_LOCK_PATH = join(SUPERSET_HOME_DIR, "terminal-host.spawn.lock");
@@ -77,7 +93,7 @@ const SCRIPT_MTIME_PATH = join(SUPERSET_HOME_DIR, "terminal-host.mtime");
 
 // Connection timeouts
 const CONNECT_TIMEOUT_MS = 5000;
-const SPAWN_WAIT_MS = 2000;
+const SPAWN_WAIT_MS = IS_WINDOWS ? 5000 : 2000; // Windows electron-as-node cold start is slower
 const REQUEST_TIMEOUT_MS = 30000;
 const SPAWN_LOCK_TIMEOUT_MS = 10000; // Max time to hold spawn lock
 
@@ -428,7 +444,7 @@ export class TerminalHostClient extends EventEmitter {
 
 	private async tryConnectControl(): Promise<boolean> {
 		return new Promise((resolve) => {
-			if (!existsSync(SOCKET_PATH)) {
+			if (!socketPathMayExist()) {
 				resolve(false);
 				return;
 			}
@@ -468,7 +484,7 @@ export class TerminalHostClient extends EventEmitter {
 
 	private async tryConnectStream(): Promise<boolean> {
 		return new Promise((resolve) => {
-			if (!existsSync(SOCKET_PATH)) {
+			if (!socketPathMayExist()) {
 				resolve(false);
 				return;
 			}
@@ -813,7 +829,7 @@ export class TerminalHostClient extends EventEmitter {
 	}: {
 		killSessions?: boolean;
 	} = {}): Promise<void> {
-		if (!existsSync(SOCKET_PATH)) return;
+		if (!socketPathMayExist()) return;
 
 		const token = this.readAuthToken();
 
@@ -908,7 +924,7 @@ export class TerminalHostClient extends EventEmitter {
 		const timeoutMs = 2000;
 
 		while (Date.now() - startTime < timeoutMs) {
-			if (!existsSync(SOCKET_PATH)) return;
+			if (!socketPathMayExist()) return;
 			const live = await this.isSocketLive();
 			if (!live) return;
 			await this.sleep(100);
@@ -925,7 +941,7 @@ export class TerminalHostClient extends EventEmitter {
 	 */
 	private isSocketLive(): Promise<boolean> {
 		return new Promise((resolve) => {
-			if (!existsSync(SOCKET_PATH)) {
+			if (!socketPathMayExist()) {
 				resolve(false);
 				return;
 			}
@@ -1007,7 +1023,7 @@ export class TerminalHostClient extends EventEmitter {
 	private async spawnDaemon(): Promise<void> {
 		// Check if socket is live first - this is the authoritative check
 		// PID file can be stale if daemon crashed and PID was reused by another process
-		if (existsSync(SOCKET_PATH)) {
+		if (socketPathMayExist()) {
 			const isLive = await this.isSocketLive();
 			if (isLive) {
 				if (DEBUG_CLIENT) {
@@ -1175,7 +1191,10 @@ export class TerminalHostClient extends EventEmitter {
 		const startTime = Date.now();
 
 		while (Date.now() - startTime < SPAWN_WAIT_MS) {
-			if (existsSync(SOCKET_PATH)) {
+			if (IS_WINDOWS) {
+				// Named pipe has no fs entry; probe readiness by connecting.
+				if (await this.isSocketLive()) return;
+			} else if (existsSync(SOCKET_PATH)) {
 				// Give it a moment to start listening
 				await this.sleep(200);
 				return;
