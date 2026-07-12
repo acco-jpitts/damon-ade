@@ -86,16 +86,40 @@ function quoteShellArg(value: string): string {
 }
 
 /**
+ * Which effort levels each runtime's Effort selector should offer. Runtimes
+ * absent from this map don't support a reasoning-effort override at all (the
+ * New Agent modal hides the Effort field for them).
+ */
+export const RUNTIME_EFFORT_OPTIONS: Partial<
+	Record<AgentType, readonly ReasoningEffort[]>
+> = {
+	codex: ["low", "medium", "high"],
+	turnstone: REASONING_EFFORTS,
+};
+
+/**
  * Builds a runtime's launch command, applying an optional model / reasoning-
  * effort override on top of its AGENT_PRESET_COMMANDS default. Only
- * claude/codex/opencode accept a `--model` override; only codex additionally
- * accepts a reasoning-effort level. Every other runtime (gemini, copilot,
- * cursor-agent, and the OpenRouter-pinned kimi/minimax/glm) ignores overrides
- * since their model is fixed by the preset.
+ * claude/codex/opencode accept a `--model` override; only codex/turnstone
+ * additionally accept a reasoning-effort level. Every other runtime (gemini,
+ * copilot, cursor-agent, and the OpenRouter-pinned kimi/minimax/glm) ignores
+ * overrides since their model is fixed by the preset.
+ *
+ * turnstone is a special case: it always builds fresh (never falls through to
+ * the static AGENT_PRESET_COMMANDS entry) because it's the only runtime whose
+ * cwd must be embedded in the command itself. Every other runtime's command
+ * is typed into a shell pane that's already sitting in the agent's worktree,
+ * so it inherits cwd for free — but `wsl.exe` starts a wholly separate Linux
+ * process whose cwd needs to be set explicitly via `--cd`.
  */
 export function buildAgentLaunchCommands(
 	agent: AgentType,
-	overrides?: { model?: string | null; reasoningEffort?: ReasoningEffort | null },
+	overrides?: {
+		model?: string | null;
+		reasoningEffort?: ReasoningEffort | null;
+		host?: string | null;
+		cwd?: string | null;
+	},
 ): string[] {
 	const model = overrides?.model?.trim() || undefined;
 	const effort = overrides?.reasoningEffort ?? undefined;
@@ -110,6 +134,19 @@ export function buildAgentLaunchCommands(
 	}
 	if (agent === "opencode" && model) {
 		return [`opencode --model ${quoteShellArg(model)}`];
+	}
+	if (
+		agent === "turnstone" &&
+		(model || effort || overrides?.host || overrides?.cwd)
+	) {
+		const host = overrides?.host?.trim() || TURNSTONE_DEFAULT_HOST;
+		const turnstoneModel = model ?? TURNSTONE_DEFAULT_MODEL;
+		const cwd = overrides?.cwd?.trim() || undefined;
+		const cdFlag = cwd ? ` --cd "${cwd}"` : "";
+		const effortFlag = effort ? ` --reasoning-effort ${effort}` : "";
+		return [
+			`wsl.exe -d ${TURNSTONE_WSL_DISTRO}${cdFlag} -- ~/turnstone-venv/bin/turnstone --base-url http://${host}/v1 --provider openai --api-key ollama --model ${quoteShellArg(turnstoneModel)}${effortFlag} --skip-permissions`,
+		];
 	}
 	return AGENT_PRESET_COMMANDS[agent];
 }
