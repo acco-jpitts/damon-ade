@@ -1,14 +1,13 @@
-import {
-	AGENT_RUNTIMES,
-	REASONING_EFFORTS,
-	type ReasoningEffort,
-} from "@superset/local-db";
+import { AGENT_RUNTIMES, type ReasoningEffort } from "@superset/local-db";
 import {
 	type AgentBinary,
 	type CheckedBinary,
 	RUNTIME_BINARY,
 } from "@superset/shared/agent-binaries";
-import { AGENT_LABELS } from "@superset/shared/agent-command";
+import {
+	AGENT_LABELS,
+	RUNTIME_EFFORT_OPTIONS,
+} from "@superset/shared/agent-command";
 import { Button } from "@superset/ui/button";
 import {
 	Dialog,
@@ -50,7 +49,7 @@ type RepoMode = "init" | "clone" | "local";
  * the launch presets) still support the rest — they return for the later
  * models stage.
  */
-const RUNTIME_CHOICES = ["claude", "codex", "opencode"] as const;
+const RUNTIME_CHOICES = ["claude", "codex", "opencode", "turnstone"] as const;
 
 /**
  * Create an Agent inside a Category. ADE agents own a standalone repo, so this
@@ -72,6 +71,7 @@ export function NewAgentModal() {
 		useState<(typeof AGENT_RUNTIMES)[number]>("claude");
 	const [model, setModel] = useState("");
 	const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>("high");
+	const [host, setHost] = useState("");
 	const [repoMode, setRepoMode] = useState<RepoMode>("init");
 	const [cloneUrl, setCloneUrl] = useState("");
 	const [localPath, setLocalPath] = useState("");
@@ -105,6 +105,7 @@ export function NewAgentModal() {
 		setRuntime("claude");
 		setModel("");
 		setReasoningEffort("high");
+		setHost("");
 		setRepoMode("init");
 		setCloneUrl("");
 		setLocalPath("");
@@ -149,7 +150,10 @@ export function NewAgentModal() {
 				role: role.trim() || undefined,
 				runtime,
 				model: model.trim() || undefined,
-				reasoningEffort: runtime === "codex" ? reasoningEffort : undefined,
+				reasoningEffort: RUNTIME_EFFORT_OPTIONS[runtime]
+					? reasoningEffort
+					: undefined,
+				host: runtime === "turnstone" ? host.trim() || undefined : undefined,
 				repo:
 					repoMode === "clone"
 						? { type: "clone", url: cloneUrl.trim() }
@@ -294,11 +298,15 @@ export function NewAgentModal() {
 								value={model}
 								onChange={(e) => setModel(e.target.value)}
 								placeholder={
-									runtime === "codex" ? "gpt-5.5" : "e.g. opus, sonnet"
+									runtime === "codex"
+										? "gpt-5.5"
+										: runtime === "turnstone"
+											? "qwen3.6:latest"
+											: "e.g. opus, sonnet"
 								}
 							/>
 						</div>
-						{runtime === "codex" && (
+						{RUNTIME_EFFORT_OPTIONS[runtime] && (
 							<div className="flex w-32 shrink-0 flex-col gap-1.5">
 								<Label>Effort</Label>
 								<Select
@@ -309,7 +317,7 @@ export function NewAgentModal() {
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
-										{REASONING_EFFORTS.map((effort) => (
+										{RUNTIME_EFFORT_OPTIONS[runtime]?.map((effort) => (
 											<SelectItem key={effort} value={effort}>
 												{effort[0].toUpperCase() + effort.slice(1)}
 											</SelectItem>
@@ -319,6 +327,17 @@ export function NewAgentModal() {
 							</div>
 						)}
 					</div>
+					{runtime === "turnstone" && (
+						<div className="flex flex-col gap-1.5">
+							<Label htmlFor="agent-host">Ollama host (optional)</Label>
+							<Input
+								id="agent-host"
+								value={host}
+								onChange={(e) => setHost(e.target.value)}
+								placeholder="192.168.1.41:11434"
+							/>
+						</div>
+					)}
 
 					<div className="flex flex-col gap-1.5">
 						<Label>Repository</Label>
