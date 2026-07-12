@@ -13,6 +13,7 @@ export interface AgentSessionWorkspace {
 	worktreePath?: string | null;
 	model?: string | null;
 	reasoningEffort?: ReasoningEffort | null;
+	host?: string | null;
 }
 
 /**
@@ -29,7 +30,8 @@ export function useAgentSession() {
 
 	const spawnAgentSession = useCallback(
 		(workspace: AgentSessionWorkspace) => {
-			const { id, runtime, worktreePath, model, reasoningEffort } = workspace;
+			const { id, runtime, worktreePath, model, reasoningEffort, host } =
+				workspace;
 			const cwd = worktreePath || undefined;
 
 			if (!runtime) {
@@ -41,7 +43,12 @@ export function useAgentSession() {
 				id: `agent-${runtime}`,
 				name: AGENT_LABELS[runtime] ?? runtime,
 				cwd: worktreePath ?? "",
-				commands: buildAgentLaunchCommands(runtime, { model, reasoningEffort }),
+				commands: buildAgentLaunchCommands(runtime, {
+					model,
+					reasoningEffort,
+					host,
+					cwd,
+				}),
 				executionMode: "new-tab",
 			};
 

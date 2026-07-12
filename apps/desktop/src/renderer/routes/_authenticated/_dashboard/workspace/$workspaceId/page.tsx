@@ -174,6 +174,7 @@ function WorkspacePage() {
 			worktreePath: workspace?.worktreePath ?? null,
 			model: workspace?.model ?? null,
 			reasoningEffort: workspace?.reasoningEffort ?? null,
+			host: workspace?.host ?? null,
 		});
 	}, [
 		spawnAgentSession,
@@ -182,6 +183,7 @@ function WorkspacePage() {
 		workspace?.worktreePath,
 		workspace?.model,
 		workspace?.reasoningEffort,
+		workspace?.host,
 	]);
 
 	// Wait for the persisted tabs store to hydrate before deciding whether an
