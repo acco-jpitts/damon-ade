@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HiCheckCircle } from "react-icons/hi2";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { useTasksFilterStore } from "../../stores/tasks-filter-state";
-import { LinearCTA } from "./components/LinearCTA";
 import { TasksTableView } from "./components/TasksTableView";
 import { type TabValue, TasksTopBar } from "./components/TasksTopBar";
 import { type TaskWithStatus, useTasksTable } from "./hooks/useTasksTable";
@@ -167,7 +166,6 @@ export function TasksView({
 	}, [availableProjects, storeSetAvailableProjects]);
 
 	const showLoading = isLoading || isCheckingLinear;
-	const showLinearCTA = !showLoading && !isLinearConnected;
 	const showEmptyState =
 		!showLoading && isLinearConnected && table.getRowModel().rows.length === 0;
 	const showTable =
@@ -175,27 +173,23 @@ export function TasksView({
 
 	return (
 		<div className="flex-1 flex flex-col min-h-0">
-			{!showLinearCTA && (
-				<TasksTopBar
-					currentTab={currentTab}
-					onTabChange={handleTabChange}
-					searchQuery={searchQuery}
-					onSearchChange={handleSearchChange}
-					assigneeFilter={assigneeFilter}
-					onAssigneeFilterChange={handleAssigneeFilterChange}
-					projectFilter={projectFilter}
-					onProjectFilterChange={setProjectFilter}
-					selectedCount={selectedTasks.length}
-					onClearSelection={handleClearSelection}
-				/>
-			)}
+			<TasksTopBar
+				currentTab={currentTab}
+				onTabChange={handleTabChange}
+				searchQuery={searchQuery}
+				onSearchChange={handleSearchChange}
+				assigneeFilter={assigneeFilter}
+				onAssigneeFilterChange={handleAssigneeFilterChange}
+				projectFilter={projectFilter}
+				onProjectFilterChange={setProjectFilter}
+				selectedCount={selectedTasks.length}
+				onClearSelection={handleClearSelection}
+			/>
 
 			{showLoading ? (
 				<div className="flex-1 flex items-center justify-center">
 					<Spinner className="size-5" />
 				</div>
-			) : showLinearCTA ? (
-				<LinearCTA />
 			) : showEmptyState ? (
 				<div className="flex-1 flex items-center justify-center">
 					<div className="flex flex-col items-center gap-2 text-muted-foreground">

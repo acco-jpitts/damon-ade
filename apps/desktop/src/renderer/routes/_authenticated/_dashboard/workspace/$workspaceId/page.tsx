@@ -172,8 +172,17 @@ function WorkspacePage() {
 			id: workspaceId,
 			runtime: workspace?.runtime ?? null,
 			worktreePath: workspace?.worktreePath ?? null,
+			model: workspace?.model ?? null,
+			reasoningEffort: workspace?.reasoningEffort ?? null,
 		});
-	}, [spawnAgentSession, workspaceId, workspace?.runtime, workspace?.worktreePath]);
+	}, [
+		spawnAgentSession,
+		workspaceId,
+		workspace?.runtime,
+		workspace?.worktreePath,
+		workspace?.model,
+		workspace?.reasoningEffort,
+	]);
 
 	// Wait for the persisted tabs store to hydrate before deciding whether an
 	// agent has any existing session — otherwise we'd race persistence and

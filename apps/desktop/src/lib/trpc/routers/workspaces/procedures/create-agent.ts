@@ -64,6 +64,8 @@ export const createAgentProcedures = () => {
 						branch,
 						name: input.name,
 						runtime: input.runtime,
+						model: input.model,
+						reasoningEffort: input.reasoningEffort,
 						isUnnamed: false,
 						tabOrder: maxTabOrder + 1,
 					})

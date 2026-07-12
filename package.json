@@ -48,7 +48,9 @@
 		"mastracode": "https://github.com/superset-sh/mastra/releases/download/mastracode-v0.4.0-superset.7/mastracode-0.4.0-superset.7.tgz"
 	},
 	"overrides": {
-		"node-gyp": "^13.0.1"
+		"node-gyp": "^13.0.1",
+		"vscode-jsonrpc": "8.2.0",
+		"vscode-languageserver-protocol": "3.17.5"
 	},
 	"patchedDependencies": {
 		"@durable-streams/state@0.2.1": "patches/@durable-streams%2Fstate@0.2.1.patch"

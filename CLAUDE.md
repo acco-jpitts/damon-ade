@@ -39,6 +39,10 @@ bun test                # bun test (a single file: bun test path/to/file.test.ts
 
 Do **not** use `electron-vite preview` for a full run — it can exhaust memory. `compile:app` + `bunx electron .` is the real path.
 
+`compile:app` currently fails at the renderer stage with `Missing "./lib/common/events.js" specifier in "vscode-jsonrpc"` (transitive version conflict — 8.2.0/8.2.1/9.0.1 all present in `node_modules/.bun/`). `main`/`preload` build and write fine; only the renderer bundle breaks, leaving `dist/renderer` untouched from its last successful build. If `dist/renderer` already exists, skip the rebuild and just `bunx electron .` — don't chase this as a regression from your own changes.
+
+To drive a **running** instance programmatically (screenshot, click, eval JS, read text) instead of just launching it, use the driver at `apps/desktop/.claude/skills/run-desktop/driver.mjs` — it talks to the main process's CDP port (`DESKTOP_AUTOMATION_PORT`, default 41729). Use `127.0.0.1`, never `localhost` (CDP is IPv4-only). See that skill's SKILL.md for the full command reference.
+
 ## Native modules (read before debugging install/launch)
 
 The app has native deps, but only **better-sqlite3** is NAN-based and needs a per-Electron-ABI rebuild — the rest (**node-pty, bufferutil, utf-8-validate**, libsql, @ast-grep/napi) are N-API and their prebuilds already work on Electron. A NODE_MODULE_VERSION mismatch at launch (e.g. "compiled against … 137 … requires 143") means better-sqlite3 wasn't rebuilt for Electron.

@@ -23,17 +23,6 @@ import type {
 } from "@superset/db/schema";
 import type { Collection } from "@tanstack/react-db";
 import { createCollection } from "@tanstack/react-db";
-import { z } from "zod";
-
-const apiKeyDisplaySchema = z.object({
-	id: z.string(),
-	name: z.string().nullable(),
-	start: z.string().nullable(),
-	createdAt: z.coerce.date(),
-	lastRequest: z.coerce.date().nullable(),
-});
-
-type ApiKeyDisplay = z.infer<typeof apiKeyDisplaySchema>;
 
 type IntegrationConnectionDisplay = Omit<
 	SelectIntegrationConnection,
@@ -52,7 +41,6 @@ interface OrgCollections {
 	devicePresence: Collection<SelectDevicePresence>;
 	integrationConnections: Collection<IntegrationConnectionDisplay>;
 	subscriptions: Collection<SelectSubscription>;
-	apiKeys: Collection<ApiKeyDisplay>;
 	chatSessions: Collection<SelectChatSession>;
 	sessionHosts: Collection<SelectSessionHost>;
 }
@@ -120,7 +108,6 @@ function createOrgCollections(_organizationId: string): OrgCollections {
 		devicePresence: createLocalCollection<SelectDevicePresence>(`device_presence-${prefix}`),
 		integrationConnections: createLocalCollection<IntegrationConnectionDisplay>(`integration_connections-${prefix}`),
 		subscriptions: createLocalCollection<SelectSubscription>(`subscriptions-${prefix}`),
-		apiKeys: createLocalCollection<ApiKeyDisplay>(`apikeys-${prefix}`),
 		chatSessions: createLocalCollection<SelectChatSession>(`chat_sessions-${prefix}`),
 		sessionHosts: createLocalCollection<SelectSessionHost>(`session_hosts-${prefix}`),
 	};

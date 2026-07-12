@@ -26,7 +26,7 @@ describe("launchCommandInPane", () => {
 		});
 		expect(write).toHaveBeenCalledWith({
 			paneId: "pane-1",
-			data: "echo hello\n",
+			data: "echo hello\r",
 			throwOnError: true,
 		});
 	});
@@ -39,14 +39,14 @@ describe("launchCommandInPane", () => {
 			paneId: "pane-1",
 			tabId: "tab-1",
 			workspaceId: "ws-1",
-			command: "echo hello\n",
+			command: "echo hello\r",
 			createOrAttach,
 			write,
 		});
 
 		expect(write).toHaveBeenCalledWith({
 			paneId: "pane-1",
-			data: "echo hello\n",
+			data: "echo hello\r",
 			throwOnError: true,
 		});
 	});
@@ -78,7 +78,7 @@ describe("writeCommandsInPane", () => {
 
 		expect(write).toHaveBeenCalledWith({
 			paneId: "pane-1",
-			data: "echo one && echo two\n",
+			data: "echo one && echo two\r",
 			throwOnError: true,
 		});
 	});

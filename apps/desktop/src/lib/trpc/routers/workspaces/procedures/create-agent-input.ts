@@ -1,4 +1,4 @@
-import { AGENT_RUNTIMES } from "@superset/local-db/schema/zod";
+import { AGENT_RUNTIMES, REASONING_EFFORTS } from "@superset/local-db/schema/zod";
 import { z } from "zod";
 
 /**
@@ -18,6 +18,15 @@ export const createAgentInput = z.object({
 		.optional()
 		.transform((v) => (v ? v : undefined)),
 	runtime: z.enum(AGENT_RUNTIMES).default("claude"),
+	// Optional per-agent overrides for the runtime's launch command. Empty
+	// string collapses to undefined, same treatment as `role`.
+	model: z
+		.string()
+		.trim()
+		.max(120)
+		.optional()
+		.transform((v) => (v ? v : undefined)),
+	reasoningEffort: z.enum(REASONING_EFFORTS).optional(),
 	repo: z
 		.discriminatedUnion("type", [
 			z.object({ type: z.literal("init") }),

@@ -311,7 +311,10 @@ export function useTerminalLifecycle({
 						if (result.claudeSessionId) {
 							const sessionId = result.claudeSessionId;
 								// Synced-from-peer panes stage the command without pressing Enter.
-								const stagedNewline = consumeSyncedPane(paneId) ? "" : "\n";
+								// A trailing "\r" is what actually submits the line — same byte a
+								// real Enter keypress sends (xterm.js), unlike "\n" which cmd.exe/
+								// ConPTY on Windows doesn't treat as Enter.
+								const stagedNewline = consumeSyncedPane(paneId) ? "" : "\r";
 							setTimeout(() => {
 								trpcClient.terminal.write
 									.mutate({
@@ -489,7 +492,9 @@ export function useTerminalLifecycle({
 								if (result.isNew && result.claudeSessionId) {
 									const sessionId = result.claudeSessionId;
 								// Synced-from-peer panes stage the command without pressing Enter.
-								const stagedNewline = consumeSyncedPane(paneId) ? "" : "\n";
+								// A trailing "\r" is what actually submits the line — see the
+								// restart-path comment above.
+								const stagedNewline = consumeSyncedPane(paneId) ? "" : "\r";
 									setTimeout(() => {
 										trpcClient.terminal.write
 											.mutate({

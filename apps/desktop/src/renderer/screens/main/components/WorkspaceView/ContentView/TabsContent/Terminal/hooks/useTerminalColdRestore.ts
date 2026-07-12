@@ -236,7 +236,10 @@ export function useTerminalColdRestore({
 					// Auto-resume Claude Code session if detected
 					if (claudeSessionId) {
 						// Synced-from-peer panes stage the command without pressing Enter.
-						const stagedNewline = consumeSyncedPane(paneId) ? "" : "\n";
+						// A trailing "\r" is what actually submits the line — same byte a real
+						// Enter keypress sends (xterm.js), unlike "\n" which cmd.exe/ConPTY on
+						// Windows doesn't treat as Enter.
+						const stagedNewline = consumeSyncedPane(paneId) ? "" : "\r";
 						setTimeout(() => {
 							trpcClient.terminal.write
 								.mutate({

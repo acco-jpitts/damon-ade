@@ -7,16 +7,11 @@ import { devtools } from "zustand/middleware";
  */
 export type SettingsSection =
 	| "account"
-	| "organization"
 	| "appearance"
 	| "ringtones"
 	| "keyboard"
 	| "behavior"
 	| "terminal"
-	| "integrations"
-	| "billing"
-	| "devices"
-	| "apikeys"
 	| "permissions"
 	| "project";
 

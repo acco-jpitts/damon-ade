@@ -3,9 +3,7 @@ import { Link, useMatchRoute } from "@tanstack/react-router";
 import {
 	HiOutlineBell,
 	HiOutlineCommandLine,
-	HiOutlineKey,
 	HiOutlinePaintBrush,
-	HiOutlinePuzzlePiece,
 	HiOutlineShieldCheck,
 	HiOutlineSparkles,
 	HiOutlineUser,
@@ -25,8 +23,6 @@ type SettingsRoute =
 	| "/settings/keyboard"
 	| "/settings/behavior"
 	| "/settings/terminal"
-	| "/settings/integrations"
-	| "/settings/api-keys"
 	| "/settings/permissions";
 
 const GENERAL_SECTIONS: {
@@ -71,18 +67,6 @@ const GENERAL_SECTIONS: {
 		section: "terminal",
 		label: "Terminal",
 		icon: <HiOutlineCommandLine className="h-4 w-4" />,
-	},
-	{
-		id: "/settings/integrations",
-		section: "integrations",
-		label: "Integrations",
-		icon: <HiOutlinePuzzlePiece className="h-4 w-4" />,
-	},
-	{
-		id: "/settings/api-keys",
-		section: "apikeys",
-		label: "API Keys",
-		icon: <HiOutlineKey className="h-4 w-4" />,
 	},
 	{
 		id: "/settings/permissions",

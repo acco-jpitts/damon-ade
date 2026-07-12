@@ -28,18 +28,7 @@ const mockSession = {
 		// callers reading session.session.activeOrganizationId resolve.
 		activeOrganizationId: MOCK_ORG_ID,
 	},
-	activeOrganizationId: MOCK_ORG_ID,
 };
-
-let authToken: string | null = "mock-token";
-
-export function setAuthToken(token: string | null) {
-	authToken = token;
-}
-
-export function getAuthToken(): string | null {
-	return authToken;
-}
 
 /**
  * Mock auth client matching better-auth's createAuthClient API surface.
@@ -51,35 +40,4 @@ export const authClient = {
 		return { data, isPending: false, error: null, refetch: async () => mockSession };
 	},
 	signOut: async (_opts?: any) => {},
-	signIn: {
-		social: async (_opts: any) => ({ data: mockSession, error: null }),
-	},
-	organization: {
-		getFullOrganization: async () => ({
-			data: {
-				id: MOCK_ORG_ID,
-				name: "ADE",
-				slug: "ade",
-				members: [
-					{
-						id: MOCK_USER_ID,
-						userId: MOCK_USER_ID,
-						role: "owner",
-						user: mockSession.user,
-					},
-				],
-			},
-			error: null,
-		}),
-		setActive: async (_opts: any) => ({ data: null, error: null }),
-		create: async (_opts: any) => ({ data: null, error: null }),
-	},
-	subscription: {
-		list: async () => ({ data: [], error: null }),
-	},
-	apiKey: {
-		list: async () => ({ data: [], error: null }),
-		create: async (_opts?: any) => ({ data: null, error: null }),
-		delete: async (_opts?: any) => ({ data: null, error: null }),
-	},
 };

@@ -1,8 +1,8 @@
 import {
 	AGENT_LABELS,
-	AGENT_PRESET_COMMANDS,
+	buildAgentLaunchCommands,
 } from "@superset/shared/agent-command";
-import type { AgentRuntime, TerminalPreset } from "@superset/local-db";
+import type { AgentRuntime, ReasoningEffort, TerminalPreset } from "@superset/local-db";
 import { useCallback } from "react";
 import { useTabsWithPresets } from "./useTabsWithPresets";
 
@@ -11,6 +11,8 @@ export interface AgentSessionWorkspace {
 	id: string;
 	runtime?: AgentRuntime | null;
 	worktreePath?: string | null;
+	model?: string | null;
+	reasoningEffort?: ReasoningEffort | null;
 }
 
 /**
@@ -18,15 +20,16 @@ export interface AgentSessionWorkspace {
  *
  * A "session" is just a normal terminal tab. Given an agent (workspace) with a
  * runtime, we build a synthetic TerminalPreset that launches the runtime's CLI
- * (via AGENT_PRESET_COMMANDS) in the agent's worktree and open it as a new tab.
- * When the agent has no runtime we fall back to a plain shell tab.
+ * (via buildAgentLaunchCommands, applying the agent's stored model/effort
+ * override) in the agent's worktree and open it as a new tab. When the agent
+ * has no runtime we fall back to a plain shell tab.
  */
 export function useAgentSession() {
 	const { openPreset, addTab } = useTabsWithPresets();
 
 	const spawnAgentSession = useCallback(
 		(workspace: AgentSessionWorkspace) => {
-			const { id, runtime, worktreePath } = workspace;
+			const { id, runtime, worktreePath, model, reasoningEffort } = workspace;
 			const cwd = worktreePath || undefined;
 
 			if (!runtime) {
@@ -38,7 +41,7 @@ export function useAgentSession() {
 				id: `agent-${runtime}`,
 				name: AGENT_LABELS[runtime] ?? runtime,
 				cwd: worktreePath ?? "",
-				commands: AGENT_PRESET_COMMANDS[runtime],
+				commands: buildAgentLaunchCommands(runtime, { model, reasoningEffort }),
 				executionMode: "new-tab",
 			};
 

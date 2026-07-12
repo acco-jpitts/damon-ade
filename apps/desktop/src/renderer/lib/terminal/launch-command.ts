@@ -19,8 +19,11 @@ interface LaunchCommandInPaneOptions {
 	write: (input: TerminalWriteInput) => Promise<unknown>;
 }
 
+// A trailing "\n" alone doesn't submit the line on Windows (cmd.exe/ConPTY
+// needs "\r", same as a real Enter keypress — xterm.js emits "\r" for Enter,
+// which is what makes manually-typed commands work on every platform).
 function normalizeTerminalCommand(command: string): string {
-	return command.endsWith("\n") ? command : `${command}\n`;
+	return command.endsWith("\r") ? command : `${command}\r`;
 }
 
 interface WriteCommandInPaneOptions {

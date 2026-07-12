@@ -8,6 +8,7 @@ import type {
 	FileOpenMode,
 	GitHubStatus,
 	GitStatus,
+	ReasoningEffort,
 	TerminalLinkBehavior,
 	TerminalPreset,
 	WorkspaceType,
@@ -137,6 +138,13 @@ export const workspaces = sqliteTable(
 		// AGENT_PRESET_COMMANDS in @superset/shared. Defaults to "claude" at the
 		// insert site; null on pre-ADE rows.
 		runtime: text("runtime").$type<AgentRuntime>(),
+		// Optional per-agent model override for the runtime's launch command
+		// (e.g. "opus", "gpt-5.5-mini"). Set at agent creation; null uses the
+		// runtime's default model. See buildAgentLaunchCommands.
+		model: text("model"),
+		// Optional reasoning-effort override, only meaningful for runtimes that
+		// support it (codex). Null uses the runtime's default effort.
+		reasoningEffort: text("reasoning_effort").$type<ReasoningEffort>(),
 	},
 	(table) => [
 		index("workspaces_project_id_idx").on(table.projectId),

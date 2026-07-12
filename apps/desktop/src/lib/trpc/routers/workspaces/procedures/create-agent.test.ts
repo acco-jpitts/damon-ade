@@ -40,3 +40,30 @@ describe("createAgentInput role", () => {
 		).toThrow();
 	});
 });
+
+describe("createAgentInput model / reasoningEffort", () => {
+	const base = { projectId: "cat-1", name: "Scout" };
+
+	it("defaults both to undefined when omitted", () => {
+		const parsed = createAgentInput.parse(base);
+		expect(parsed.model).toBeUndefined();
+		expect(parsed.reasoningEffort).toBeUndefined();
+	});
+
+	it("trims model and treats an empty string as unset", () => {
+		expect(createAgentInput.parse({ ...base, model: "  opus  " }).model).toBe(
+			"opus",
+		);
+		expect(createAgentInput.parse({ ...base, model: "" }).model).toBeUndefined();
+	});
+
+	it("accepts a valid reasoningEffort and rejects an invalid one", () => {
+		expect(
+			createAgentInput.parse({ ...base, reasoningEffort: "medium" })
+				.reasoningEffort,
+		).toBe("medium");
+		expect(() =>
+			createAgentInput.parse({ ...base, reasoningEffort: "extreme" }),
+		).toThrow();
+	});
+});

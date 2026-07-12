@@ -158,6 +158,8 @@ export function GroupStrip() {
 			id: activeWorkspaceId,
 			runtime: workspace?.runtime ?? null,
 			worktreePath: workspace?.worktreePath ?? null,
+			model: workspace?.model ?? null,
+			reasoningEffort: workspace?.reasoningEffort ?? null,
 		});
 		if (result) {
 			const tab = useTabsStore.getState().tabs.find((t) => t.id === result.tabId);

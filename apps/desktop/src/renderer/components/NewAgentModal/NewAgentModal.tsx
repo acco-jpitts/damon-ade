@@ -1,4 +1,8 @@
-import { AGENT_RUNTIMES } from "@superset/local-db";
+import {
+	AGENT_RUNTIMES,
+	REASONING_EFFORTS,
+	type ReasoningEffort,
+} from "@superset/local-db";
 import {
 	type AgentBinary,
 	type CheckedBinary,
@@ -28,6 +32,7 @@ import { useNavigate } from "@tanstack/react-router";
 import type { ChangeEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { HiArrowPath } from "react-icons/hi2";
+import { LuFolderOpen } from "react-icons/lu";
 import { BinaryInstallDialog } from "renderer/components/BinaryInstallDialog/BinaryInstallDialog";
 import { downscaleImageToDataUrl } from "renderer/lib/downscale-image";
 import { electronTrpc } from "renderer/lib/electron-trpc";
@@ -65,6 +70,8 @@ export function NewAgentModal() {
 	const [role, setRole] = useState("");
 	const [runtime, setRuntime] =
 		useState<(typeof AGENT_RUNTIMES)[number]>("claude");
+	const [model, setModel] = useState("");
+	const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>("high");
 	const [repoMode, setRepoMode] = useState<RepoMode>("init");
 	const [cloneUrl, setCloneUrl] = useState("");
 	const [localPath, setLocalPath] = useState("");
@@ -75,6 +82,20 @@ export function NewAgentModal() {
 
 	const createAgent = electronTrpc.workspaces.createAgent.useMutation();
 	const setWorkspaceIcon = electronTrpc.workspaces.setWorkspaceIcon.useMutation();
+	const selectDirectory = electronTrpc.window.selectDirectory.useMutation();
+
+	const handleBrowseLocalPath = () => {
+		selectDirectory.mutate(
+			{ title: "Select repository", defaultPath: localPath || undefined },
+			{
+				onSuccess: (result) => {
+					if (!result.canceled && result.path) {
+						setLocalPath(result.path);
+					}
+				},
+			},
+		);
+	};
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: reset each open
 	useEffect(() => {
@@ -82,6 +103,8 @@ export function NewAgentModal() {
 		setName("");
 		setRole("");
 		setRuntime("claude");
+		setModel("");
+		setReasoningEffort("high");
 		setRepoMode("init");
 		setCloneUrl("");
 		setLocalPath("");
@@ -125,6 +148,8 @@ export function NewAgentModal() {
 				name: name.trim(),
 				role: role.trim() || undefined,
 				runtime,
+				model: model.trim() || undefined,
+				reasoningEffort: runtime === "codex" ? reasoningEffort : undefined,
 				repo:
 					repoMode === "clone"
 						? { type: "clone", url: cloneUrl.trim() }
@@ -261,6 +286,40 @@ export function NewAgentModal() {
 						)}
 					</div>
 
+					<div className="flex gap-3">
+						<div className="flex flex-1 flex-col gap-1.5">
+							<Label htmlFor="agent-model">Model (optional)</Label>
+							<Input
+								id="agent-model"
+								value={model}
+								onChange={(e) => setModel(e.target.value)}
+								placeholder={
+									runtime === "codex" ? "gpt-5.5" : "e.g. opus, sonnet"
+								}
+							/>
+						</div>
+						{runtime === "codex" && (
+							<div className="flex w-32 shrink-0 flex-col gap-1.5">
+								<Label>Effort</Label>
+								<Select
+									value={reasoningEffort}
+									onValueChange={(v) => setReasoningEffort(v as ReasoningEffort)}
+								>
+									<SelectTrigger>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{REASONING_EFFORTS.map((effort) => (
+											<SelectItem key={effort} value={effort}>
+												{effort[0].toUpperCase() + effort.slice(1)}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+						)}
+					</div>
+
 					<div className="flex flex-col gap-1.5">
 						<Label>Repository</Label>
 						<RadioGroup
@@ -295,11 +354,25 @@ export function NewAgentModal() {
 							/>
 						)}
 						{repoMode === "local" && (
-							<Input
-								value={localPath}
-								onChange={(e) => setLocalPath(e.target.value)}
-								placeholder="/Users/you/code/my-repo"
-							/>
+							<div className="flex gap-2">
+								<Input
+									value={localPath}
+									onChange={(e) => setLocalPath(e.target.value)}
+									placeholder="/Users/you/code/my-repo"
+									className="flex-1"
+								/>
+								<Button
+									type="button"
+									variant="outline"
+									size="icon"
+									onClick={handleBrowseLocalPath}
+									disabled={selectDirectory.isPending}
+									className="shrink-0"
+									aria-label="Browse for directory"
+								>
+									<LuFolderOpen className="size-4" />
+								</Button>
+							</div>
 						)}
 					</div>
 				</div>

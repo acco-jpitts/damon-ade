@@ -39,15 +39,42 @@ output lands in `dist/{main,preload,renderer}`:
 
 ```bash
 cd apps/desktop
-bun run compile:app
+bun run build:app
 ```
 
-⚠️ In the **current working tree** this fails at the renderer stage with
-`Missing "./lib/common/events.js" specifier in "vscode-jsonrpc"` (a transitive
-version conflict — 8.2.0/8.2.1/9.0.1 are all installed). `main` and `preload`
-bundles build fine; only the client build breaks. The shipped `dist/` predates
-this dep change. See Troubleshooting. If `dist/` already exists, skip straight
-to Run.
+Prefer `build:app` over the raw `compile:app` — it's `compile:app` wrapped
+with fixes for two pitfalls that otherwise leave you with a build that opens
+to a blank window or crashes at boot (`scripts/build-app.ts`):
+
+1. A stale `dist/main` from a prior `bun run dev` can have `NODE_ENV`
+   *baked in* as `"development"` (Vite replaces `process.env.NODE_ENV` with a
+   literal at build time), which makes the app try to load a Vite dev server
+   instead of `dist/renderer` — even if you launch it with
+   `NODE_ENV=production` in the environment, since the value is already
+   compiled in. `compile:app` always rebuilds `main`/`preload` fresh in
+   production mode, so this only bites if you skip straight to
+   `bunx electron .` on an old `dist/` without rebuilding. `build:app` always
+   rebuilds.
+2. `bun install` can silently swap better-sqlite3's Electron-rebuilt `.node`
+   binary for a Node-ABI prebuild, while a stale `.forge-meta` marker (next
+   to the `.node` file) tricks `@electron/rebuild` into skipping the fix on
+   the next `install:deps` run — the exact `NODE_MODULE_VERSION 137 vs 143`
+   error in Troubleshooting below. `build:app` checks the ABI after building
+   and, if it's wrong, deletes the marker and forces a real rebuild.
+
+The `vscode-jsonrpc` conflict below (pitfall 3) is now fixed permanently via
+root `package.json` `overrides` — `build:app` just warns if that override is
+ever missing (e.g. after a rebase drops it).
+
+⚠️ Previously this failed at the renderer stage with `Missing
+"./lib/common/events.js" specifier in "vscode-jsonrpc"` (a transitive version
+conflict between `langium`'s required `vscode-jsonrpc@8.2.0` and
+`mastracode`'s floating `"latest"` pin resolving to `9.0.1`, whose stricter
+package `exports` block the deep imports `langium` needs). Fixed by pinning
+both `vscode-jsonrpc` and `vscode-languageserver-protocol` in root
+`package.json` `overrides`; requires `bun install --force` after any change
+to that field. If `dist/` already exists and you just want to run what's
+there without rebuilding, skip straight to Run.
 
 ## Run (agent path)
 
@@ -152,11 +179,11 @@ link-provider cases) — a suite failure count ≠ your change being broken here
 ## Troubleshooting
 
 - **`compile:app` → `Missing "./lib/common/events.js" specifier in
-  "vscode-jsonrpc"`:** transitive version conflict (8.2.0/8.2.1/9.0.1 all under
-  `node_modules/.bun/`). Current-working-tree only; the released `dist/` built
-  before it. Not fixed here (dependency-graph surgery, out of scope for running
-  the app). Run the existing `dist/` instead, or dedupe `vscode-jsonrpc` to a
-  single version.
+  "vscode-jsonrpc"`:** fixed via the `vscode-jsonrpc`/
+  `vscode-languageserver-protocol` `overrides` in root `package.json` — if you
+  hit this, that override is missing or `bun install --force` hasn't been run
+  since it was added/changed (overrides need `--force` to relink already-
+  installed nested deps).
 - **Driver: "no page target on :PORT":** the app isn't running with CDP on that
   port. Check `curl http://127.0.0.1:PORT/json` (use 127.0.0.1). If empty, the
   port bind failed — see the port-taken gotcha; relaunch on a free port.
@@ -166,5 +193,9 @@ link-provider cases) — a suite failure count ≠ your change being broken here
 - **App won't start / terminals dead:** first look at `~/.ade/daemon.log` (the
   terminal-host daemon's output) and the electron stdout from launch.
 - **`NODE_MODULE_VERSION` mismatch at launch:** better-sqlite3 built for Node,
-  not Electron. Re-run `bun run --filter=@ade/desktop install:deps`
-  (electron-builder rebuild). Confirm with the probe in Prerequisites.
+  not Electron — `bun run build:app` (see Build) catches and fixes this
+  automatically. To fix by hand: delete
+  `node_modules/.bun/better-sqlite3@*/node_modules/better-sqlite3/build/Release/.forge-meta`
+  (a stale marker otherwise tricks `@electron/rebuild` into skipping the
+  rebuild), then re-run `bun run --filter=@ade/desktop install:deps`. Confirm
+  with the probe in Prerequisites.

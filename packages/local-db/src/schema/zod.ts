@@ -117,6 +117,18 @@ export const agentRuntimeSchema = z.enum(AGENT_RUNTIMES);
 export type AgentRuntime = z.infer<typeof agentRuntimeSchema>;
 
 /**
+ * Reasoning effort override for runtimes that support it (currently codex's
+ * `model_reasoning_effort`). Mirrors REASONING_EFFORTS in
+ * @superset/shared/src/agent-command.ts — kept in sync manually, same as
+ * AGENT_RUNTIMES above.
+ */
+export const REASONING_EFFORTS = ["low", "medium", "high"] as const;
+
+export const reasoningEffortSchema = z.enum(REASONING_EFFORTS);
+
+export type ReasoningEffort = z.infer<typeof reasoningEffortSchema>;
+
+/**
  * External apps that can be opened
  */
 export const EXTERNAL_APPS = [

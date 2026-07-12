@@ -18,6 +18,7 @@
 		"predev": "cross-env NODE_ENV=development bun run clean:dev && cross-env NODE_ENV=development bun run scripts/clean-launch-services.ts && cross-env NODE_ENV=development bun run scripts/patch-dev-protocol.ts",
 		"dev": "cross-env NODE_ENV=development electron-vite dev --watch",
 		"compile:app": "cross-env NODE_OPTIONS=--max-old-space-size=8192 electron-vite build",
+		"build:app": "bun run scripts/build-app.ts",
 		"copy:native-modules": "bun run scripts/copy-native-modules.ts",
 		"validate:native-runtime": "bun run scripts/validate-native-runtime.ts",
 		"prebuild": "bun run clean:dev && bun run compile:app && bun run copy:native-modules && bun run validate:native-runtime",

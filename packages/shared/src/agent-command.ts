@@ -50,6 +50,45 @@ export const AGENT_PRESET_DESCRIPTIONS: Record<AgentType, string> = {
 	glm: "GLM 5.2 via Claude Code + OpenRouter",
 };
 
+export const REASONING_EFFORTS = ["low", "medium", "high"] as const;
+export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
+
+/** Wraps a shell arg in double quotes, escaping chars that would otherwise
+ * break out of the quoted string (user-supplied model names get inserted
+ * into a launch command that's typed straight into the agent's terminal). */
+function quoteShellArg(value: string): string {
+	return `"${value.replace(/[\\"$`]/g, "\\$&")}"`;
+}
+
+/**
+ * Builds a runtime's launch command, applying an optional model / reasoning-
+ * effort override on top of its AGENT_PRESET_COMMANDS default. Only
+ * claude/codex/opencode accept a `--model` override; only codex additionally
+ * accepts a reasoning-effort level. Every other runtime (gemini, copilot,
+ * cursor-agent, and the OpenRouter-pinned kimi/minimax/glm) ignores overrides
+ * since their model is fixed by the preset.
+ */
+export function buildAgentLaunchCommands(
+	agent: AgentType,
+	overrides?: { model?: string | null; reasoningEffort?: ReasoningEffort | null },
+): string[] {
+	const model = overrides?.model?.trim() || undefined;
+	const effort = overrides?.reasoningEffort ?? undefined;
+
+	if (agent === "codex" && (model || effort)) {
+		return [
+			`codex --model ${quoteShellArg(model ?? "gpt-5.5")} -c model_reasoning_effort="${effort ?? "high"}" --ask-for-approval never --sandbox danger-full-access -c model_reasoning_summary="detailed" -c model_supports_reasoning_summaries=true`,
+		];
+	}
+	if (agent === "claude" && model) {
+		return [`claude --dangerously-skip-permissions --model ${quoteShellArg(model)}`];
+	}
+	if (agent === "opencode" && model) {
+		return [`opencode --model ${quoteShellArg(model)}`];
+	}
+	return AGENT_PRESET_COMMANDS[agent];
+}
+
 export interface TaskInput {
 	id: string;
 	slug: string;
