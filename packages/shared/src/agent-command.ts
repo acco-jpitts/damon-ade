@@ -105,12 +105,14 @@ export const RUNTIME_EFFORT_OPTIONS: Partial<
  * copilot, cursor-agent, and the OpenRouter-pinned kimi/minimax/glm) ignores
  * overrides since their model is fixed by the preset.
  *
- * turnstone is a special case: it always builds fresh (never falls through to
- * the static AGENT_PRESET_COMMANDS entry) because it's the only runtime whose
- * cwd must be embedded in the command itself. Every other runtime's command
- * is typed into a shell pane that's already sitting in the agent's worktree,
- * so it inherits cwd for free — but `wsl.exe` starts a wholly separate Linux
- * process whose cwd needs to be set explicitly via `--cd`.
+ * turnstone's branch is conditional too, same as codex/claude/opencode — with
+ * zero overrides it falls through to the static AGENT_PRESET_COMMANDS entry
+ * below. The difference is *why* cwd matters here: every other runtime's
+ * command is typed into a shell pane that's already sitting in the agent's
+ * worktree, so it inherits cwd for free, but `wsl.exe` starts a wholly
+ * separate Linux process whose cwd needs to be set explicitly via `--cd` — so
+ * in practice a real per-agent turnstone session (which always supplies cwd
+ * from the worktree path) always takes the dynamic branch.
  */
 export function buildAgentLaunchCommands(
 	agent: AgentType,
