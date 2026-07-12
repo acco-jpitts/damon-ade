@@ -214,7 +214,7 @@ export const AGENT_PRESET_COMMANDS: Record<AgentType, string[]> = {
 	minimax: ['ANTHROPIC_BASE_URL="https://openrouter.ai/api" ANTHROPIC_AUTH_TOKEN="$OPENROUTER_API_KEY" ANTHROPIC_API_KEY="" claude --model minimax/minimax-m3 --dangerously-skip-permissions'],
 	glm: ['ANTHROPIC_BASE_URL="https://openrouter.ai/api" ANTHROPIC_AUTH_TOKEN="$OPENROUTER_API_KEY" ANTHROPIC_API_KEY="" claude --model z-ai/glm-5.2 --dangerously-skip-permissions'],
 	turnstone: [
-		`wsl.exe -d ${TURNSTONE_WSL_DISTRO} -- ~/turnstone-venv/bin/turnstone --base-url http://${TURNSTONE_DEFAULT_HOST}/v1 --provider openai --api-key ollama --model ${TURNSTONE_DEFAULT_MODEL} --skip-permissions`,
+		`wsl.exe -d ${TURNSTONE_WSL_DISTRO} -- ~/turnstone-venv/bin/turnstone --base-url http://${TURNSTONE_DEFAULT_HOST}/v1 --provider openai --api-key ollama --model "${TURNSTONE_DEFAULT_MODEL}" --skip-permissions`,
 	],
 };
 
@@ -674,7 +674,10 @@ export function buildAgentLaunchCommands(
 	if (agent === "opencode" && model) {
 		return [`opencode --model ${quoteShellArg(model)}`];
 	}
-	if (agent === "turnstone") {
+	if (
+		agent === "turnstone" &&
+		(model || effort || overrides?.host || overrides?.cwd)
+	) {
 		const host = overrides?.host?.trim() || TURNSTONE_DEFAULT_HOST;
 		const turnstoneModel = model ?? TURNSTONE_DEFAULT_MODEL;
 		const cwd = overrides?.cwd?.trim() || undefined;
@@ -687,6 +690,18 @@ export function buildAgentLaunchCommands(
 	return AGENT_PRESET_COMMANDS[agent];
 }
 ```
+
+Note: turnstone's branch is conditional, same as codex/claude/opencode — when
+called with no overrides at all (no model, effort, host, or cwd), it falls
+through to the static `AGENT_PRESET_COMMANDS.turnstone` entry from Task 1 instead
+of rebuilding an identical string. This only matters for callers that invoke
+`buildAgentLaunchCommands("turnstone")` with nothing (e.g. a bare test call) —
+real per-agent usage (Task 7) always supplies `cwd` from the worktree path, so it
+always takes the dynamic branch in practice. Task 1's static entry must produce
+**exactly** the same string this dynamic branch would with zero overrides
+(including the quoted model — `--model "qwen3.6:latest"`, not
+`--model qwen3.6:latest`) so the two stay byte-identical without one calling the
+other.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
