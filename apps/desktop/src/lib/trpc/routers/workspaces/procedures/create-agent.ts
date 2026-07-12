@@ -66,6 +66,7 @@ export const createAgentProcedures = () => {
 						runtime: input.runtime,
 						model: input.model,
 						reasoningEffort: input.reasoningEffort,
+						host: input.host,
 						isUnnamed: false,
 						tabOrder: maxTabOrder + 1,
 					})

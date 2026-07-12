@@ -67,3 +67,29 @@ describe("createAgentInput model / reasoningEffort", () => {
 		).toThrow();
 	});
 });
+
+describe("createAgentInput host", () => {
+	const base = { projectId: "cat-1", name: "Scout" };
+
+	it("defaults to undefined when omitted", () => {
+		expect(createAgentInput.parse(base).host).toBeUndefined();
+	});
+
+	it("trims and treats an empty string as unset", () => {
+		expect(
+			createAgentInput.parse({ ...base, host: "  10.0.0.5:11434  " }).host,
+		).toBe("10.0.0.5:11434");
+		expect(createAgentInput.parse({ ...base, host: "" }).host).toBeUndefined();
+	});
+});
+
+describe("createAgentInput reasoningEffort accepts turnstone's wider vocabulary", () => {
+	const base = { projectId: "cat-1", name: "Scout" };
+
+	it("accepts a turnstone-only value like xhigh", () => {
+		expect(
+			createAgentInput.parse({ ...base, reasoningEffort: "xhigh" })
+				.reasoningEffort,
+		).toBe("xhigh");
+	});
+});

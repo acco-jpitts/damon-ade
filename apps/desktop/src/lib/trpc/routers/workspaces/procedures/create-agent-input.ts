@@ -27,6 +27,14 @@ export const createAgentInput = z.object({
 		.optional()
 		.transform((v) => (v ? v : undefined)),
 	reasoningEffort: z.enum(REASONING_EFFORTS).optional(),
+	// Turnstone-only Ollama host override (e.g. "10.0.0.5:11434"). Same
+	// trim/empty-to-undefined treatment as `model`.
+	host: z
+		.string()
+		.trim()
+		.max(120)
+		.optional()
+		.transform((v) => (v ? v : undefined)),
 	repo: z
 		.discriminatedUnion("type", [
 			z.object({ type: z.literal("init") }),
