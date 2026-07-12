@@ -143,8 +143,12 @@ export const workspaces = sqliteTable(
 		// runtime's default model. See buildAgentLaunchCommands.
 		model: text("model"),
 		// Optional reasoning-effort override, only meaningful for runtimes that
-		// support it (codex). Null uses the runtime's default effort.
+		// support it (codex, turnstone). Null uses the runtime's default effort.
 		reasoningEffort: text("reasoning_effort").$type<ReasoningEffort>(),
+		// Optional per-agent Ollama host override for the turnstone runtime
+		// (e.g. "10.0.0.5:11434"). Null uses TURNSTONE_DEFAULT_HOST. Meaningless
+		// for every other runtime.
+		host: text("host"),
 	},
 	(table) => [
 		index("workspaces_project_id_idx").on(table.projectId),

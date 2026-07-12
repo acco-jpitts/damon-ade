@@ -281,6 +281,13 @@
       "when": 1783821695628,
       "tag": "0039_skinny_rictor",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "6",
+      "when": 1783827105617,
+      "tag": "0040_nosy_mentor",
+      "breakpoints": true
     }
   ]
 }
