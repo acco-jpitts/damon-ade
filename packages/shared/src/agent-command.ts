@@ -197,12 +197,15 @@ const AGENT_COMMANDS: Record<
 		buildHeredoc(prompt, delimiter, 'ANTHROPIC_BASE_URL="https://openrouter.ai/api" ANTHROPIC_AUTH_TOKEN="$OPENROUTER_API_KEY" ANTHROPIC_API_KEY="" claude --model minimax/minimax-m3 --dangerously-skip-permissions'),
 	glm: (prompt, delimiter) =>
 		buildHeredoc(prompt, delimiter, 'ANTHROPIC_BASE_URL="https://openrouter.ai/api" ANTHROPIC_AUTH_TOKEN="$OPENROUTER_API_KEY" ANTHROPIC_API_KEY="" claude --model z-ai/glm-5.2 --dangerously-skip-permissions'),
-	turnstone: (prompt, delimiter) =>
-		buildHeredoc(
-			prompt,
-			delimiter,
-			`wsl.exe -d ${TURNSTONE_WSL_DISTRO} -- ~/turnstone-venv/bin/turnstone --base-url http://${TURNSTONE_DEFAULT_HOST}/v1 --provider openai --api-key ollama --model "${TURNSTONE_DEFAULT_MODEL}" --skip-permissions --prompt`,
-		),
+	// Turnstone has no CLI mechanism for a one-shot initial prompt — verified
+	// against its real --help output: no --prompt flag, and a bare positional
+	// prompt argument is rejected outright ("error: unrecognized arguments").
+	// Every other entry in this map relies on the target CLI accepting an
+	// initial task prompt for autonomous one-shot execution; Turnstone doesn't
+	// support that yet, so this fails clearly instead of guessing at a flag
+	// that doesn't exist.
+	turnstone: () =>
+		'echo "Turnstone does not support autonomous task-prompt execution yet." && exit 1',
 };
 
 export function buildAgentPromptCommand({
