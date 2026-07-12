@@ -1,5 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { buildAgentPromptCommand } from "./agent-command";
+import {
+	AGENT_PRESET_COMMANDS,
+	buildAgentPromptCommand,
+	REASONING_EFFORTS,
+} from "./agent-command";
 
 describe("buildAgentPromptCommand", () => {
 	it("adds `--` before codex prompt payload", () => {
@@ -25,5 +29,26 @@ describe("buildAgentPromptCommand", () => {
 		expect(command).toStartWith(
 			"claude --dangerously-skip-permissions \"$(cat <<'SUPERSET_PROMPT_abcdefgh'",
 		);
+	});
+});
+
+describe("turnstone runtime registration", () => {
+	it("has a default preset command wrapped through WSL", () => {
+		const [command] = AGENT_PRESET_COMMANDS.turnstone;
+		expect(command).toContain("wsl.exe -d Ubuntu --");
+		expect(command).toContain("turnstone-venv/bin/turnstone");
+		expect(command).toContain("--skip-permissions");
+	});
+
+	it("extends REASONING_EFFORTS with turnstone's full vocabulary", () => {
+		expect(REASONING_EFFORTS).toEqual([
+			"none",
+			"minimal",
+			"low",
+			"medium",
+			"high",
+			"xhigh",
+			"max",
+		]);
 	});
 });

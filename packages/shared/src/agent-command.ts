@@ -8,9 +8,21 @@ export const AGENT_TYPES = [
 	"kimi",
 	"minimax",
 	"glm",
+	"turnstone",
 ] as const;
 
 export type AgentType = (typeof AGENT_TYPES)[number];
+
+/**
+ * Turnstone (turnstonelabs/turnstone) drives local Ollama models. It must run
+ * inside WSL, not native Windows — its bash tool needs a real POSIX
+ * environment (verified by hand; see the design spec). These are the fixed
+ * defaults from the user's own working wrapper script; overridable per-agent
+ * via the `host`/`model`/`reasoningEffort` workspace columns.
+ */
+const TURNSTONE_WSL_DISTRO = "Ubuntu";
+const TURNSTONE_DEFAULT_HOST = "192.168.1.41:11434";
+const TURNSTONE_DEFAULT_MODEL = "qwen3.6:latest";
 
 export const AGENT_LABELS: Record<AgentType, string> = {
 	claude: "Claude",
@@ -22,6 +34,7 @@ export const AGENT_LABELS: Record<AgentType, string> = {
 	kimi: "Kimi K2.7",
 	minimax: "MiniMax M3",
 	glm: "GLM 5.2",
+	turnstone: "Turnstone",
 };
 
 export const AGENT_PRESET_COMMANDS: Record<AgentType, string[]> = {
@@ -36,6 +49,9 @@ export const AGENT_PRESET_COMMANDS: Record<AgentType, string[]> = {
 	kimi: ['ANTHROPIC_BASE_URL="https://openrouter.ai/api" ANTHROPIC_AUTH_TOKEN="$OPENROUTER_API_KEY" ANTHROPIC_API_KEY="" claude --model moonshotai/kimi-k2.7-code --dangerously-skip-permissions'],
 	minimax: ['ANTHROPIC_BASE_URL="https://openrouter.ai/api" ANTHROPIC_AUTH_TOKEN="$OPENROUTER_API_KEY" ANTHROPIC_API_KEY="" claude --model minimax/minimax-m3 --dangerously-skip-permissions'],
 	glm: ['ANTHROPIC_BASE_URL="https://openrouter.ai/api" ANTHROPIC_AUTH_TOKEN="$OPENROUTER_API_KEY" ANTHROPIC_API_KEY="" claude --model z-ai/glm-5.2 --dangerously-skip-permissions'],
+	turnstone: [
+		`wsl.exe -d ${TURNSTONE_WSL_DISTRO} -- ~/turnstone-venv/bin/turnstone --base-url http://${TURNSTONE_DEFAULT_HOST}/v1 --provider openai --api-key ollama --model "${TURNSTONE_DEFAULT_MODEL}" --skip-permissions`,
+	],
 };
 
 export const AGENT_PRESET_DESCRIPTIONS: Record<AgentType, string> = {
@@ -48,9 +64,18 @@ export const AGENT_PRESET_DESCRIPTIONS: Record<AgentType, string> = {
 	kimi: "Kimi K2.7 via Claude Code + OpenRouter",
 	minimax: "MiniMax M3 via Claude Code + OpenRouter",
 	glm: "GLM 5.2 via Claude Code + OpenRouter",
+	turnstone: "Turnstone: local Ollama models via WSL",
 };
 
-export const REASONING_EFFORTS = ["low", "medium", "high"] as const;
+export const REASONING_EFFORTS = [
+	"none",
+	"minimal",
+	"low",
+	"medium",
+	"high",
+	"xhigh",
+	"max",
+] as const;
 export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
 
 /** Wraps a shell arg in double quotes, escaping chars that would otherwise
@@ -172,6 +197,12 @@ const AGENT_COMMANDS: Record<
 		buildHeredoc(prompt, delimiter, 'ANTHROPIC_BASE_URL="https://openrouter.ai/api" ANTHROPIC_AUTH_TOKEN="$OPENROUTER_API_KEY" ANTHROPIC_API_KEY="" claude --model minimax/minimax-m3 --dangerously-skip-permissions'),
 	glm: (prompt, delimiter) =>
 		buildHeredoc(prompt, delimiter, 'ANTHROPIC_BASE_URL="https://openrouter.ai/api" ANTHROPIC_AUTH_TOKEN="$OPENROUTER_API_KEY" ANTHROPIC_API_KEY="" claude --model z-ai/glm-5.2 --dangerously-skip-permissions'),
+	turnstone: (prompt, delimiter) =>
+		buildHeredoc(
+			prompt,
+			delimiter,
+			`wsl.exe -d ${TURNSTONE_WSL_DISTRO} -- ~/turnstone-venv/bin/turnstone --base-url http://${TURNSTONE_DEFAULT_HOST}/v1 --provider openai --api-key ollama --model "${TURNSTONE_DEFAULT_MODEL}" --skip-permissions --prompt`,
+		),
 };
 
 export function buildAgentPromptCommand({

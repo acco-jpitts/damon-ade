@@ -110,6 +110,7 @@ export const AGENT_RUNTIMES = [
 	"kimi",
 	"minimax",
 	"glm",
+	"turnstone",
 ] as const;
 
 export const agentRuntimeSchema = z.enum(AGENT_RUNTIMES);
@@ -122,7 +123,15 @@ export type AgentRuntime = z.infer<typeof agentRuntimeSchema>;
  * @superset/shared/src/agent-command.ts — kept in sync manually, same as
  * AGENT_RUNTIMES above.
  */
-export const REASONING_EFFORTS = ["low", "medium", "high"] as const;
+export const REASONING_EFFORTS = [
+	"none",
+	"minimal",
+	"low",
+	"medium",
+	"high",
+	"xhigh",
+	"max",
+] as const;
 
 export const reasoningEffortSchema = z.enum(REASONING_EFFORTS);
 

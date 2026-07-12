@@ -6,7 +6,13 @@ import { type AgentType } from "./agent-command";
  * CLI (see AGENT_PRESET_COMMANDS), so availability of those runtimes gates on
  * `claude` being installed.
  */
-export type AgentBinary = "claude" | "codex" | "opencode" | "gemini" | "git";
+export type AgentBinary =
+	| "claude"
+	| "codex"
+	| "opencode"
+	| "gemini"
+	| "git"
+	| "turnstone";
 
 /**
  * Maps an agent runtime to the external binary its launch command invokes. Used
@@ -25,6 +31,7 @@ export const RUNTIME_BINARY: Record<AgentType, AgentBinary> = {
 	kimi: "claude",
 	minimax: "claude",
 	glm: "claude",
+	turnstone: "turnstone",
 };
 
 export interface BinaryInstallInfo {
@@ -71,6 +78,12 @@ export const BINARY_INSTALL: Record<AgentBinary, BinaryInstallInfo> = {
 		url: "https://git-scm.com/downloads",
 		note: "On macOS, Git ships with Apple's Command Line Tools.",
 	},
+	turnstone: {
+		label: "Turnstone",
+		command: "pip install turnstone",
+		url: "https://github.com/turnstonelabs/turnstone",
+		note: "Must run inside WSL (Ubuntu), not native Windows — Turnstone's bash tool needs a real POSIX environment. Requires a Python venv already set up inside WSL.",
+	},
 };
 
 /** The binaries surfaced by the runtime-availability query. */
@@ -79,6 +92,7 @@ export const CHECKED_BINARIES = [
 	"codex",
 	"opencode",
 	"git",
+	"turnstone",
 ] as const satisfies readonly AgentBinary[];
 
 export type CheckedBinary = (typeof CHECKED_BINARIES)[number];
