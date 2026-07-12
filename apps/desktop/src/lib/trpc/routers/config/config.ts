@@ -9,6 +9,7 @@ import {
 import { eq } from "drizzle-orm";
 import { MEMORY_SCAFFOLD_ENABLED } from "main/lib/feature-flags";
 import { findRealBinary } from "main/lib/agent-setup/utils";
+import { checkTurnstoneAvailable } from "main/lib/agent-setup/turnstone";
 import { localDb } from "main/lib/local-db";
 import type { SetupAction, SetupDetectionResult } from "shared/types/config";
 import { z } from "zod";
@@ -19,14 +20,22 @@ import { loadSetupConfig } from "../workspaces/utils/setup";
  * Runtime-binary availability, cached briefly. Shelling out to the login shell
  * (findRealBinary) is a few hundred ms, and the ModelBar / NewAgentModal both
  * read it, so a short TTL avoids repeated probes while `force` lets the UI
- * re-check after the user installs a missing tool.
+ * re-check after the user installs a missing tool. The turnstone check is
+ * slower (a cold WSL VM can take a couple of seconds to start), so this cache
+ * matters even more for it.
  */
 const AVAILABILITY_TTL_MS = 5_000;
 let availabilityCache: { at: number; value: RuntimeAvailability } | null = null;
 
 function computeRuntimeAvailability(): RuntimeAvailability {
 	const entries = CHECKED_BINARIES.map(
-		(bin) => [bin, findRealBinary(bin) !== null] as const,
+		(bin) =>
+			[
+				bin,
+				bin === "turnstone"
+					? checkTurnstoneAvailable()
+					: findRealBinary(bin) !== null,
+			] as const,
 	);
 	return Object.fromEntries(entries) as RuntimeAvailability;
 }
